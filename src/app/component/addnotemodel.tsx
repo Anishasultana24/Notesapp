@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
-  Modal,
-  View,
-  TextInput,
-  Button,
-  StyleSheet,
   Alert,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Feather';
 
 interface Props {
   visible: boolean;
   onSave: (title: string, content: string) => void;
   onClose: () => void;
-  onDelete?: () => void; //  delete 
+  onDelete?: () => void;
   initialTitle?: string;
   initialContent?: string;
 }
@@ -28,6 +30,7 @@ export default function AddNoteModal({
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
 
+  // sync incoming data every time the modal opens
   useEffect(() => {
     if (visible) {
       setTitle(initialTitle);
@@ -35,62 +38,76 @@ export default function AddNoteModal({
     }
   }, [visible, initialTitle, initialContent]);
 
+  const charCount = useMemo(() => (title + content).length, [title, content]);
+
   const handleDelete = () => {
-    Alert.alert(
-      'Delete Note',
-      'Are you sure you want to delete this note?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            onDelete?.();
-            onClose();
-          },
+    Alert.alert('Delete note?', 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          onDelete?.();
+          onClose();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
     <Modal visible={visible} animationType="slide">
       <View style={styles.container}>
+        {/* -- Header bar -- */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose}>
+            <Icon name="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={() => {
+              onSave(title.trim(), content.trim());
+              
+            }}
+          >
+            <Icon name="check" size={24} color="#30C957" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Title  */}
         <TextInput
           placeholder="Title"
+          placeholderTextColor="#555"
           value={title}
           onChangeText={setTitle}
-          style={styles.input}
-          placeholderTextColor="#888"
+          style={styles.titleInput}
         />
+
+        {/* - Date + time*/}
+        <Text style={styles.meta}>
+          {new Date().toLocaleDateString(undefined, {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}{' '}
+          · {charCount} characters
+        </Text>
+
+        {/*  Inputs */}
+
         <TextInput
-          placeholder="Content"
+          placeholder="Note"
+          placeholderTextColor="#555"
           value={content}
           onChangeText={setContent}
-          style={[styles.input, { height: 100 }]}
           multiline
-          placeholderTextColor="#888"
+          style={styles.contentInput}
         />
 
-        <Button
-          title="Save"
-          onPress={() => {
-            onSave(title, content);
-            setTitle('');
-            setContent('');
-          }}
-        />
 
-        {/* Show delete  editing */}
-        {onDelete && (
-          <View style={styles.deleteButton}>
-            <Button title="Delete" onPress={handleDelete} color="red" />
-          </View>
-        )}
 
-        <View style={styles.cancelButton}>
-          <Button title="Cancel" onPress={onClose} color="#888" />
-        </View>
       </View>
     </Modal>
   );
@@ -99,21 +116,40 @@ export default function AddNoteModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    justifyContent: 'center',
     backgroundColor: '#000',
+    paddingHorizontal: 20,
+    paddingTop: 50,
   },
-  input: {
-    backgroundColor: '#fff',
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: 8,
-    color: '#000',
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  deleteButton: {
-    marginTop: 10,
+  saveButton: {
+    padding: 6,
   },
-  cancelButton: {
-    marginTop: 10,
+  meta: {
+    color: '#777',
+    fontSize: 12,
+    marginTop: 8,
+    // marginBottom: 5,
+  },
+  titleInput: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 1,
+  },
+  contentInput: {
+    marginTop:20,
+    fontSize: 16,
+    color: '#fff',
+  },
+  toolbar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderTopWidth: 0.5,
+    borderTopColor: '#333',
   },
 });
